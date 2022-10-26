@@ -3,10 +3,10 @@ import cv2
 import numpy
 
 
-def average_blur(surf: pygame.Surface, size: int) -> pygame.Surface:
+def average_blur(surf: pygame.Surface, size: int, dest=None) -> pygame.Surface | None:
     array = numpy.zeros((*surf.get_size(), 4), "int")
-    array[:, :, :3] = pygame.surfarray.array3d(surf)
-    array[:, :, 3] = pygame.surfarray.array_alpha(surf)
+    array[:, :, :3] = pygame.surfarray.pixels3d(surf)
+    array[:, :, 3] = pygame.surfarray.pixels_alpha(surf)
     array = cv2.blur(array, (size, size))  # NOQA
     surf = pygame.surfarray.make_surface(array[:, :, :3]).convert_alpha()
     pygame.surfarray.pixels_alpha(surf)[:] = array[:, :, 3]

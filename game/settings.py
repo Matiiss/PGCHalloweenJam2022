@@ -2,7 +2,7 @@ import pygame
 
 
 # window settings
-WIDTH, HEIGHT = 320, 180
+WIDTH, HEIGHT = 640, 360
 FLAGS = pygame.SCALED
 
 # clock settings
