@@ -1,4 +1,5 @@
 #version 300 es
+
 precision mediump float;
 uniform sampler2D Texture;
 in vec2 v_text;
