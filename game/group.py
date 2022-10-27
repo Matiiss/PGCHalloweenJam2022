@@ -1,11 +1,12 @@
-from . import renderer
+from . import renderer, entity as ent
 
 
 class Group:
     def __init__(self):
+        self._renderer = renderer.Renderer.get_renderer()
         self.entities = {}
 
-    def add(self, entity):
+    def add(self, entity: ent.Entity):
         self.entities[entity] = 0
         entity.groups.append(self)
 
@@ -13,6 +14,6 @@ class Group:
         for entity in self.entities:
             entity.update(*args, **kwargs)
 
-    def render(self, dest):
+    def render(self, dest=None):
         for entity in self.entities:
-            renderer.render(entity.image, entity.pos, dest)
+            self._renderer.render(entity.image, entity.pos, dest)

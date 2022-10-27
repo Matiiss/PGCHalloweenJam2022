@@ -1,4 +1,5 @@
 import struct
+import time
 
 import pygame
 import moderngl
@@ -21,11 +22,22 @@ class ShaderDisplay(pygame.Surface):
         )
 
         self.texture = self.ctx.texture(
-            size, 3, pygame.image.tostring(self, "RGB", 1)  # NOQA
+            size, 3, pygame.image.tostring(self, "RGB", True)
         )
         self.texture.repeat_x = False
         self.texture.repeat_y = False
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+
+        self.overlay = pygame.Surface(size, flags=pygame.SRCALPHA)
+        self._overlay_texture = self.ctx.texture(
+            size, 4, pygame.image.tostring(self.overlay, "RGBA", True)
+        )
+        self._overlay_texture.repeat_x = False
+        self._overlay_texture.repeat_y = False
+        self._overlay_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+
+        self.prog["Texture"] = 0
+        self.prog["Overlay"] = 1
 
         vbo = self.ctx.buffer(struct.pack("8f", *world_coordinates))
         uvmap = self.ctx.buffer(struct.pack("8f", *texture_coordinates))
@@ -41,7 +53,16 @@ class ShaderDisplay(pygame.Surface):
     def update(self):
         texture_data = self.get_view("1")
         self.texture.write(texture_data)
+
+        overlay_data = self.overlay.get_view("1")
+        self._overlay_texture.write(overlay_data)
+        self.overlay.fill((0, 0, 0, 0))
+
         self.ctx.clear(14 / 255, 40 / 255, 66 / 255)
-        self.texture.use()
+
+        self.texture.use(location=0)
+        self._overlay_texture.use(location=1)
+
         self.vao.render()
+
         pygame.display.flip()

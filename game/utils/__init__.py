@@ -19,3 +19,7 @@ def cut_circle(surf, radius, pos=None):
     pygame.draw.circle(alpha_mask, (255, 255, 255, 0), pos or pygame.Vector2(surf.get_size()) / 2, radius)
     pygame.surfarray.pixels_alpha(surf)[:] = pygame.surfarray.pixels_alpha(alpha_mask)
     return surf
+
+
+def clamp(value: float, min_: float, max_: float) -> float:
+    return max(min_, min(value, max_))
