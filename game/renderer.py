@@ -25,7 +25,7 @@ class Renderer:
         elif self.camera is not None:
             if isinstance(pos, pygame.Rect):
                 pos = pos.topleft
-            dest.blit(surf, self.camera + pos)
+            dest.blit(surf, pos - self.camera)
 
     @classmethod
     def get_renderer(cls):

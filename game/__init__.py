@@ -10,13 +10,21 @@ from .utils.assets import load_map
 
 pygame.init()
 
-# screen = shader.ShaderDisplay(
-#     (settings.WIDTH, settings.HEIGHT), (1920, 1080), "vertex.vert", "fragment.frag"
-# )
-screen = pygame.display.set_mode(
-    (settings.WIDTH, settings.HEIGHT), flags=settings.FLAGS
+if settings.USE_SHADERS:
+    screen = shader.ShaderDisplay(
+        (settings.WIDTH, settings.HEIGHT), (1920, 1080), "vertex.vert", "fragment.frag"
+    )
+else:
+    screen = pygame.display.set_mode(
+        (settings.WIDTH, settings.HEIGHT), flags=settings.FLAGS
+    )
+
+common.overlay = pygame.Surface(
+    (settings.WIDTH, settings.HEIGHT), flags=pygame.SRCALPHA
 )
-# surf = screen.copy()
+
+common.screen = screen
+
 pygame.display.set_caption("DOOM")
 assets.load_assets()
 clock = pygame.time.Clock()
@@ -24,7 +32,9 @@ renderer = Renderer(screen)
 current_scene = scenes.Gameplay()
 
 world_map = load_map("assets/maps/map.json")
-common.collision_map = list(list(data["collision"] for data in row) for row in world_map)
+common.collision_map = list(
+    list(data["collision"] for data in row) for row in world_map
+)
 
 x, y = 32, 32
 fps_font = pygame.font.Font("assets/fonts/syne_mono/regular.ttf", 12)
@@ -35,22 +45,29 @@ _group.add(_player)
 
 running = True
 while running:
-    common.delta_time = clock.tick(settings.FPS)
-    common.actual_frames = clamp(
-        common.delta_time / settings.ACTUAL_FRAME_COEFFICIENT,
-        min_=settings.ACTUAL_FRAME_MIN,
-        max_=settings.ACTUAL_FRAME_MAX,
-    )
-    screen.fill("black")
+    dt_ms = clock.tick(settings.FPS)
+    common.delta_time = dt_ms / 1000
+    common.delta_time = clamp(common.delta_time, 0.008, 0.042)
+    screen.fill("#3c280d")
 
     events = pygame.event.get()
+    common.events = events
     for event in events:
         if event.type == pygame.QUIT:
             running = False
 
     _group.update()
-    cam = pygame.Vector2(settings.WIDTH, settings.HEIGHT) / 2 - _player.rect.center
-    renderer.camera = cam
+    cam = (
+        _player.rect.center
+        - pygame.Vector2(settings.WIDTH, settings.HEIGHT) / 2
+        - renderer.camera
+    ) * 0.05
+    renderer.camera += round(cam.x), round(cam.y)
+    # renderer.camera.x, renderer.camera.y = clamp(
+    #     renderer.camera.x, 0, len(world_map[0]) * settings.TILE_SIZE - settings.WIDTH
+    # ), clamp(
+    #     renderer.camera.y, 0, len(world_map) * settings.TILE_SIZE - settings.HEIGHT
+    # )
 
     for row, row_data in enumerate(world_map):
         for col, tile in enumerate(row_data):
@@ -66,9 +83,14 @@ while running:
 
     # pygame.draw.circle(screen, "red", (settings.WIDTH / 2, settings.HEIGHT / 2), 5)
 
-    # screen.overlay.blit(
-    #     fps_font.render(f"FPS:{clock.get_fps():.0f}", False, "black"), (0, 0)
-    # )
+    if settings.USE_SHADERS:
+        screen.overlay.blit(
+            fps_font.render(f"FPS:{clock.get_fps():.0f}", False, "black"), (0, 0)
+        )
+    else:
+        screen.blit(fps_font.render(f"FPS:{clock.get_fps():.0f}", False, "black"), (0, 0))
 
-    pygame.display.flip()
-    # screen.update()
+    if settings.USE_SHADERS:
+        screen.update()
+    else:
+        pygame.display.flip()

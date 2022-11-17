@@ -45,5 +45,17 @@ class FRect:
     def bottom(self):
         return self.y + self.height
 
+    @bottom.setter
+    def bottom(self, y):
+        self.y = y - self.height
+
+    @property
+    def centerx(self):
+        return self.x + self.width / 2
+
+    @property
+    def centery(self):
+        return self.y + self.height / 2
+
     def __str__(self):
         return f"<{self.__class__.__name__}({self.x, self.y, self.width, self.height})>"

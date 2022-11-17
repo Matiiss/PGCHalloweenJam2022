@@ -1,4 +1,6 @@
-from . import renderer, entity as ent
+import pygame
+
+from . import renderer, entity as ent, settings
 
 
 class Group:
@@ -16,4 +18,9 @@ class Group:
 
     def render(self, dest=None):
         for entity in self.entities:
+            if hasattr(entity, "tiles") and settings.DEBUG:
+                for rect in entity.tiles:
+                    img = pygame.Surface((rect.width, rect.height), flags=pygame.SRCALPHA)
+                    img.fill("red")
+                    self._renderer.render(img, rect)
             self._renderer.render(entity.image, entity.pos, dest)

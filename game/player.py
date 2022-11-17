@@ -1,8 +1,8 @@
-import math
+import functools
 
 import pygame
 
-from . import entity, common, frect, settings, position
+from . import entity, common, frect, settings, position, enums, animation, spritesheet
 from .assets import assets
 
 
@@ -11,32 +11,62 @@ class Player(entity.Entity):
         super().__init__()
 
         self.pos = pygame.Vector2(pos)
-        self.images = assets["images"]["scientist"]
-        self.image = self.images["base"]
-        self.rect = frect.FRect(*self.pos, *self.image.get_size())
+        # self.images = assets["images"]["scientist"]
+        # self.image = self.images["base"]
+        sprite_sheet = spritesheet.AsepriteSpriteSheet(
+            "assets/images/player/player.png"
+        )
+        self.animation = animation.Animation(sprite_sheet)
+        self.image = sprite_sheet["idle"][0]["image"]
+        self.pos_rect = frect.FRect(*self.pos, *self.image.get_size())
+        self.rect = frect.FRect(*self.image.get_bounding_rect())
 
         self.velocity = pygame.Vector2(0, 0)
+        self.x_vel = settings.PLAYER_X_VEL
+        self.terminal_y = settings.PLAYER_Y_TERMINAL_VEL
+        self.jump_power = settings.PLAYER_JUMP_POWER
+        self.can_jump = False
+        self.tiles = []
+
+        self.state = enums.EntityState.IDLE
+        self.flip_horizontal = False
 
     def update(self):
         dx, dy = 0, 0
+        self.state = enums.EntityState.IDLE
+
+        for event in common.events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE and self.can_jump:
+                    self.velocity.y = -self.jump_power
+
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_d]:
             dx += 1
+            self.state = enums.EntityState.RUN
+            self.flip_horizontal = False
         if keys[pygame.K_a]:
             dx -= 1
-        if keys[pygame.K_SPACE]:
-            self.velocity.y = -10
+            self.state = enums.EntityState.RUN
+            self.flip_horizontal = True
 
-        self.velocity.x = dx
-        vel = (
-            self.velocity * common.actual_frames
-            + 1 / 2 * settings.GRAVITY * common.actual_frames**2
+        self.velocity.x = dx * self.x_vel
+        dx, dy = vel = (
+            self.velocity * common.delta_time
+            + 0.5 * settings.GRAVITY * common.delta_time**2
         )
-        new_pos = position.Position(self.rect.center + vel)
+        self.velocity += settings.GRAVITY * common.delta_time
+        if self.velocity.y > self.terminal_y:
+            self.velocity.y = self.terminal_y
+
+        new_pos = position.Position(self.rect.center)
         cx, cy = new_pos.cx, new_pos.cy
 
-        tiles = [
+        if vel.y < 0:
+            self.state = enums.EntityState.JUMP
+
+        self.tiles = [
             pygame.Rect(
                 cx * settings.TILE_SIZE,
                 cy * settings.TILE_SIZE,
@@ -55,33 +85,34 @@ class Player(entity.Entity):
             )
             if self.collides(cx, cy)
         ]
-        # if not tiles:
-        #     return
 
         horizontal_projection = self.rect.move(vel.x, 0)
         vertical_projection = self.rect.move(0, vel.y)
+        self.can_jump = False
 
-        for tile in tiles:
+        for tile in self.tiles:
             if horizontal_projection.colliderect(tile):
                 vel.x = 0
             if vertical_projection.colliderect(tile):
-                if vel.y > 0:
-                    bot = math.ceil(vertical_projection.bottom)
-                    print(tile.y, bot, bot - tile.y)
-                    vel.y = bot - tile.y
-                    # if vel.y < 1:
-                    #     vel.y = 0
-                    print(vel)
+                if dy >= 0:
+                    self.can_jump = True
+                    vel.y = tile.top - self.rect.bottom
+                else:
+                    self.state = enums.EntityState.JUMP
+                    vel.y = tile.bottom - self.rect.top
+                    self.velocity.y = 0
 
         self.pos += vel
-        self.velocity += settings.GRAVITY * common.actual_frames
-        if self.velocity.y > 10:
-            self.velocity.y = 10
+        self.pos_rect.topleft = self.pos
+        self.rect.center = self.pos_rect.center
 
-        self.rect.topleft = self.pos
+        self.image = pygame.transform.flip(
+            self.animation.update(self.state), self.flip_horizontal, False
+        )
 
-    # @functools.lru_cache(maxsize=512)
-    def collides(self, cx: int, cy: int) -> bool:
+    @staticmethod
+    @functools.lru_cache(maxsize=512)
+    def collides(cx: int, cy: int) -> bool:
         map_ = common.collision_map
         if 0 <= cy < len(map_) and 0 <= cx < len(map_[0]):
             return map_[cy][cx]

@@ -1,5 +1,4 @@
 import struct
-import time
 
 import pygame
 import moderngl
@@ -7,7 +6,7 @@ import moderngl
 
 class ShaderDisplay(pygame.Surface):
     def __init__(self, size, display_size, vertex_shader, fragment_shader):
-        super().__init__(size, depth=24)
+        super().__init__(size, depth=24, masks=(255, 65280, 16711680, 0))
         pygame.display.set_mode(display_size, flags=pygame.OPENGL | pygame.DOUBLEBUF)
 
         self.ctx = moderngl.create_context()
