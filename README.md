@@ -1,7 +1,7 @@
-# PGCHalloweenJam2022
+# SkeleLab
 
-
-Whoa, what's a README?
+Started out as a PGCHalloweenJam 2022 entry, was not submitted but the development continues... spooky, huh?  
+The aim of the game is to...
 
 ## Launching the game
 Run either
@@ -12,4 +12,4 @@ or
 ```
 python entry_point.py
 ```
-from the root directory of this project.
+in the terminal from the root directory of this project.
