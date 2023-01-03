@@ -62,12 +62,13 @@ while running:
         - pygame.Vector2(settings.WIDTH, settings.HEIGHT) / 2
         - renderer.camera
     ) * 0.05
-    renderer.camera += round(cam.x), round(cam.y)
-    # renderer.camera.x, renderer.camera.y = clamp(
-    #     renderer.camera.x, 0, len(world_map[0]) * settings.TILE_SIZE - settings.WIDTH
-    # ), clamp(
-    #     renderer.camera.y, 0, len(world_map) * settings.TILE_SIZE - settings.HEIGHT
-    # )
+    renderer.camera += round(cam)
+    # renderer.camera += cam
+    renderer.camera.x, renderer.camera.y = clamp(
+        renderer.camera.x, 0, len(world_map[0]) * settings.TILE_SIZE - settings.WIDTH
+    ), clamp(
+        renderer.camera.y, 0, len(world_map) * settings.TILE_SIZE - settings.HEIGHT
+    )
 
     for row, row_data in enumerate(world_map):
         for col, tile in enumerate(row_data):

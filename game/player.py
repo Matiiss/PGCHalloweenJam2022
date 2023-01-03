@@ -39,17 +39,22 @@ class Player(entity.Entity):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and self.can_jump:
                     self.velocity.y = -self.jump_power
+                elif event.key == pygame.K_d:
+                    self.flip_horizontal = False
+                elif event.key == pygame.K_a:
+                    self.flip_horizontal = True
 
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_d]:
             dx += 1
             self.state = enums.EntityState.RUN
-            self.flip_horizontal = False
         if keys[pygame.K_a]:
             dx -= 1
             self.state = enums.EntityState.RUN
-            self.flip_horizontal = True
+
+        if dx == 0:
+            self.state = enums.EntityState.IDLE
 
         self.velocity.x = dx * self.x_vel
         dx, dy = vel = (
@@ -66,7 +71,42 @@ class Player(entity.Entity):
         if vel.y < 0:
             self.state = enums.EntityState.JUMP
 
-        self.tiles = [
+        self.tiles = self.get_surrounding_tiles(cx, cy)
+
+        horizontal_projection = self.rect.move(vel.x, 0)
+        vertical_projection = self.rect.move(0, vel.y)
+        self.can_jump = False
+
+        for tile in self.tiles:
+            if horizontal_projection.colliderect(tile):
+                vel.x = 0
+            if vertical_projection.colliderect(tile):
+                if dy >= 0:
+                    self.can_jump = True
+                    vel.y = tile.top - self.rect.bottom
+                else:
+                    self.state = enums.EntityState.JUMP
+                    vel.y = tile.bottom - self.rect.top
+                self.velocity.y = 0
+
+        self.pos += vel
+        self.pos_rect.topleft = self.pos
+        self.rect.center = self.pos_rect.center
+
+        self.image = pygame.transform.flip(
+            self.animation.update(self.state), self.flip_horizontal, False
+        )
+
+    @staticmethod
+    @functools.lru_cache(maxsize=512)
+    def collides(cx: int, cy: int) -> bool:
+        map_ = common.collision_map
+        if 0 <= cy < len(map_) and 0 <= cx < len(map_[0]):
+            return map_[cy][cx]
+        return True
+
+    def get_surrounding_tiles(self, cx, cy) -> list[pygame.Rect]:
+        tiles = [
             pygame.Rect(
                 cx * settings.TILE_SIZE,
                 cy * settings.TILE_SIZE,
@@ -85,35 +125,4 @@ class Player(entity.Entity):
             )
             if self.collides(cx, cy)
         ]
-
-        horizontal_projection = self.rect.move(vel.x, 0)
-        vertical_projection = self.rect.move(0, vel.y)
-        self.can_jump = False
-
-        for tile in self.tiles:
-            if horizontal_projection.colliderect(tile):
-                vel.x = 0
-            if vertical_projection.colliderect(tile):
-                if dy >= 0:
-                    self.can_jump = True
-                    vel.y = tile.top - self.rect.bottom
-                else:
-                    self.state = enums.EntityState.JUMP
-                    vel.y = tile.bottom - self.rect.top
-                    self.velocity.y = 0
-
-        self.pos += vel
-        self.pos_rect.topleft = self.pos
-        self.rect.center = self.pos_rect.center
-
-        self.image = pygame.transform.flip(
-            self.animation.update(self.state), self.flip_horizontal, False
-        )
-
-    @staticmethod
-    @functools.lru_cache(maxsize=512)
-    def collides(cx: int, cy: int) -> bool:
-        map_ = common.collision_map
-        if 0 <= cy < len(map_) and 0 <= cx < len(map_[0]):
-            return map_[cy][cx]
-        return True
+        return tiles
